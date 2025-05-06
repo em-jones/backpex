@@ -60,6 +60,7 @@ defmodule BackpexWeb do
       use Phoenix.Component
       import Ecto.Query
       @behaviour Backpex.Metric
+      use Backpex.Metric
     end
   end
 

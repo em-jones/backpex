@@ -19,13 +19,13 @@
   <.modal
     :if={@action_to_confirm}
     id="action-confirm-modal"
-    title={@action_to_confirm.module.label(assigns, nil)}
+    title={@action_to_confirm.module.label(Map.put(assigns, :key, @action_to_confirm.key), nil)}
     on_cancel={JS.push("cancel-action-confirm")}
     open={true}
     close_label={Backpex.__("Close modal", @live_resource)}
   >
     <div class="px-5 py-3">
-      {@action_to_confirm.module.confirm(assigns)}
+      {@action_to_confirm.module.confirm(Map.put(assigns, :key, @action_to_confirm.key))}
     </div>
     <div>
       <.live_component

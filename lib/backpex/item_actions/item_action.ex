@@ -20,6 +20,7 @@ defmodule Backpex.ItemAction do
   - `Backpex.Fields.Upload`
   """
   @callback fields() :: list()
+  @callback fields(assigns :: map()) :: list()
 
   @doc """
   The base item / schema to use for the changeset. The result will be passed as the first parameter to `c:changeset/3` each time it is called.
@@ -89,7 +90,7 @@ defmodule Backpex.ItemAction do
   @callback handle(socket :: Phoenix.LiveView.Socket.t(), items :: list(map()), params :: map() | struct()) ::
               {:ok, Phoenix.LiveView.Socket.t()} | {:error, Ecto.Changeset.t()}
 
-  @optional_callbacks confirm: 1, confirm_label: 1, cancel_label: 1, changeset: 3, fields: 0
+  @optional_callbacks confirm: 1, confirm_label: 1, cancel_label: 1, changeset: 3, fields: 0, fields: 1
 
   @doc """
   Defines `Backpex.ItemAction` behaviour and provides default implementations.
@@ -112,7 +113,10 @@ defmodule Backpex.ItemAction do
       def cancel_label(assigns), do: Backpex.__("Cancel", assigns.live_resource)
 
       @impl Backpex.ItemAction
-      def fields, do: []
+      def fields(_ \\ %{})
+
+      @impl Backpex.ItemAction
+      def fields(_), do: []
 
       @impl Backpex.ItemAction
       def changeset(_change, _attrs, metadata) do
@@ -124,10 +128,9 @@ defmodule Backpex.ItemAction do
       end
 
       @impl Backpex.ItemAction
-      def base_schema(_assigns) do
-        types = fields() |> Backpex.Field.changeset_types()
-
-        {%{}, types}
+      def base_schema(assigns) do
+        types = fields(assigns) |> Backpex.Field.changeset_types()
+        {%{}, types} |> Ecto.Changeset.cast(%{}, Map.keys(types))
       end
     end
   end
@@ -144,10 +147,9 @@ defmodule Backpex.ItemAction do
   @doc """
   Checks whether item action has form.
   """
-  def has_form?(item_action) do
+  def has_form?(item_action, assigns \\ nil) do
     module = Map.fetch!(item_action, :module)
-
-    module.fields() != []
+    ([] != (if is_nil(assigns), do: module.fields(), else: module.fields(assigns)))
   end
 
   @doc """

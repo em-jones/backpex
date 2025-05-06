@@ -11,7 +11,6 @@ defmodule Backpex.LiveResource do
 
   alias Backpex.Resource
   alias Backpex.Router
-
   require Backpex
 
   @options_schema [
@@ -108,6 +107,11 @@ defmodule Backpex.LiveResource do
       """,
       type: {:or, [:mod_arg, :atom, {:list, {:or, [:mod_arg, :atom]}}]},
       required: false
+    ],
+    form: [
+      doc: "The form configuration.",
+      type: :keyword_list,
+      default: []
     ]
   ]
 
@@ -234,6 +238,9 @@ defmodule Backpex.LiveResource do
   """
   @callback translate(msg :: tuple()) :: binary()
 
+  @callback selectable?(assigns :: map()) :: boolean()
+
+  @callback form_config() :: keyword()
   @doc """
   Uses LiveResource in the current module to make it a LiveResource.
 
@@ -246,6 +253,7 @@ defmodule Backpex.LiveResource do
         ],
         layout: {MyAppWeb.LayoutView, :admin}
         # ...
+
 
   ## Options
 
@@ -278,6 +286,9 @@ defmodule Backpex.LiveResource do
       def can?(_assigns, _action, _item), do: true
 
       @impl Backpex.LiveResource
+      def selectable?(_assigns), do: false
+
+      @impl Backpex.LiveResource
       def index_row_class(assigns, item, selected, index), do: nil
 
       @impl Backpex.LiveResource
@@ -295,13 +306,18 @@ defmodule Backpex.LiveResource do
       @impl Backpex.LiveResource
       def item_actions(default_actions), do: default_actions
 
+      @impl Backpex.LiveResource
+      def form_config, do: []
+
       defoverridable can?: 3,
                      fields: 0,
                      filters: 0,
                      filters: 1,
                      resource_actions: 0,
                      item_actions: 1,
-                     index_row_class: 4
+                     index_row_class: 4,
+                     form_config: 0,
+                     selectable?: 1
 
       live_resource = __MODULE__
 
@@ -403,6 +419,13 @@ defmodule Backpex.LiveResource do
       end
 
       @impl Backpex.LiveResource
+      def render_resource_slot(var!(assigns), :row, :actions) do
+        ~H"""
+        <.row_actions {assigns} />
+        """
+      end
+
+      @impl Backpex.LiveResource
       def render_resource_slot(var!(assigns), :show, :page_title) do
         ~H"""
         <.main_title class="flex items-center justify-between">
@@ -417,7 +440,7 @@ defmodule Backpex.LiveResource do
           >
             <Backpex.HTML.CoreComponents.icon
               name="hero-pencil-square"
-              class="h-6 w-6 cursor-pointer transition duration-75 hover:text-primary hover:scale-110"
+              class="h-6 w-6 cursor-pointer transition duration-75 hover:text-c-primary hover:scale-110"
             />
           </.link>
         </.main_title>
@@ -902,4 +925,7 @@ defmodule Backpex.LiveResource do
 
   defp maybe_to_atom(nil), do: nil
   defp maybe_to_atom(value), do: String.to_existing_atom(value)
+
+  def get_order_options(query_options),
+    do: query_options |> Map.take([:order_by, :order_direction])
 end

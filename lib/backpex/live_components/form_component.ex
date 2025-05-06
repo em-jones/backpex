@@ -10,12 +10,14 @@ defmodule Backpex.FormComponent do
 
   require Backpex
 
+
   def update(assigns, socket) do
     socket
-    |> assign(assigns)
+    |> assign(assigns |> Map.delete(:streams))
     |> assign_new(:action_type, fn -> nil end)
     |> assign_new(:continue_label, fn -> nil end)
     |> assign_new(:show_form_errors, fn -> false end)
+    |> assign(:form_config, assigns.live_resource.config(:form))
     |> update_assigns()
     |> assign_form()
     |> ok()
@@ -43,7 +45,7 @@ defmodule Backpex.FormComponent do
 
   defp assign_fields(%{assigns: %{action_to_confirm: action_to_confirm}} = socket) do
     socket
-    |> assign_new(:fields, fn -> action_to_confirm.module.fields() end)
+    |> assign_new(:fields, fn -> action_to_confirm.module.fields(socket.assigns) end)
     |> assign(:save_label, action_to_confirm.module.confirm_label(socket.assigns))
   end
 
@@ -58,7 +60,7 @@ defmodule Backpex.FormComponent do
 
     socket
     |> assign(:save_label, ResourceAction.name(resource_action, :label))
-    |> assign(:fields, resource_action.module.fields())
+    |> assign(:fields, resource_action.module.fields(socket.assigns))
   end
 
   defp maybe_assign_continue_label(socket) do
@@ -361,7 +363,7 @@ defmodule Backpex.FormComponent do
     params = drop_readonly_changes(params, fields, assigns)
 
     result =
-      if Backpex.ItemAction.has_form?(action_to_confirm) do
+      if Backpex.ItemAction.has_form?(action_to_confirm, socket.assigns) do
         changeset_function = &action_to_confirm.module.changeset/3
 
         metadata = Resource.build_changeset_metadata(assigns)
@@ -392,6 +394,7 @@ defmodule Backpex.FormComponent do
         |> assign(:form, form)
         |> noreply()
 
+      {:noreply, socket} -> socket |> noreply()
       unexpected_return ->
         raise ArgumentError, """
         Invalid return value from #{inspect(action_to_confirm.module)}.handle/2.
@@ -488,6 +491,6 @@ defmodule Backpex.FormComponent do
   defp handle_uploads(_socket, _item), do: :ok
 
   def render(assigns) do
-    Backpex.HTML.Resource.form_component(assigns)
+    Backpex.HTML.Resource.form_component(assigns |> Map.delete(:streams))
   end
 end

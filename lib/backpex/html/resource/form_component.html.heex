@@ -14,6 +14,7 @@
       end
     }
     multipart
+    {if(!is_nil(@form_config[:hook]), do: ["phx-hook": @form_config[:hook]], else: [])}
   >
     <.edit_card>
       <%!-- Default panel --%>
@@ -55,9 +56,9 @@
           <button
             type="submit"
             class={["btn", if(form_errors?(@show_form_errors, f), do: "btn-error", else: "btn-primary")]}
-            phx-disable-with={@action_to_confirm.module.confirm_label(assigns) <> "..."}
+            phx-disable-with={@action_to_confirm.module.confirm_label(Map.put(assigns, :key, @action_to_confirm.key)) <> "..."}
           >
-            {@action_to_confirm.module.confirm_label(assigns)}
+            {@action_to_confirm.module.confirm_label(Map.put(assigns, :key, @action_to_confirm.key))}
           </button>
         <% else %>
           <.link navigate={@live_resource.return_to(@socket, assigns, @live_action, :cancel, @item)}>

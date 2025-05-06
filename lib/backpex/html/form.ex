@@ -292,7 +292,7 @@ defmodule Backpex.HTML.Form do
               phx-target={@event_target}
               aria-label={Backpex.__({"Unselect %{label}", %{label: label}}, @live_resource)}
             >
-              <Backpex.HTML.CoreComponents.icon name="hero-x-mark" class="text-primary-content size-4 scale-110" />
+              <Backpex.HTML.CoreComponents.icon name="hero-x-mark" class="text-c-primary-content size-4 scale-110" />
             </div>
           </div>
         </div>

@@ -26,37 +26,39 @@ defmodule Backpex.HTML.Layout do
     attr :class, :string, doc: "additional class that will be added to the component"
   end
 
-  slot :footer, doc: "content to be displayed in the footer"
+  slot :footer, doc: "content to be displayed in the footer" do
+    attr :class, :string, doc: "additional class that will be added to the component"
+  end
 
   def app_shell(assigns) do
     ~H"""
-    <div id="backpex-app-shell" class={["drawer", @class]} phx-hook="BackpexSidebarSections">
+    <div id="backpex-app-shell" class={["drawer h-full", @class]} phx-hook="BackpexSidebarSections">
       <input id="menu-drawer" type="checkbox" class="drawer-toggle" />
-      <div class="drawer-content">
-        <div class="bg-base-200 fixed inset-0 -z-10 h-full w-full"></div>
-        <div class={[
-          "menu hidden overflow-y-scroll px-2 pt-5 pb-4 md:fixed md:inset-y-0 md:mt-16 md:block md:w-64",
-          build_slot_class(@sidebar)
-        ]}>
-          {render_slot(@sidebar)}
-        </div>
-
-        <div class={["flex flex-1 flex-col", length(@sidebar) > 0 && "md:pl-64"]}>
-          <div class="fixed top-0 z-30 block w-full md:-ml-64">
+      <div class="drawer-content h-full min-h-0">
+        <div class="flex flex-col h-full">
+          <header class="w-full">
             <.topbar class={build_slot_class(@topbar)}>
               {render_slot(@topbar)}
               <label :if={@sidebar != []} for="menu-drawer" class="btn btn-square drawer-button btn-ghost md:hidden">
                 <Backpex.HTML.CoreComponents.icon name="hero-bars-3-solid" class="h-6" />
               </label>
             </.topbar>
-          </div>
-          <main class="h-[calc(100vh-4rem)] mt-[4rem]">
-            <div class={["mx-auto mt-5 px-4 sm:px-6 md:px-8", !@fluid && "max-w-7xl"]}>
+          </header>
+          <main class="flex flex-row h-full min-h-0 overflow-hidden">
+            <aside class={[
+              "menu overflow-y-scroll pt-5 md:px-6 px-0 pb-4 md:w-64 w-0 shrink-0",
+              build_slot_class(@sidebar)
+            ]}>
+              {render_slot(@sidebar)}
+            </aside>
+            <div id="table-container" class={["mx-auto mt-5 px-4 sm:px-6 md:px-8 h-full min-w-0 flex flex-col", if(@fluid, do: "w-7xl", else: "w-7xl")]}>
               {render_slot(@inner_block)}
             </div>
+          </main>
+          <footer class={["w-full flex flex-row justify-center", Map.get(@footer |> List.first, :class)]}>
             {render_slot(@footer)}
             <.footer :if={@footer == []} />
-          </main>
+          </footer>
         </div>
       </div>
       <div class="drawer-side z-40">

@@ -1,5 +1,5 @@
-<.main_container>
-  <div class="relative">
+<.main_container class="flex flex-col h-full overflow-y-scroll h-full" id="resource-main-container">
+  <div class="relative overflow-y-scroll min-h-0">
     <div class="bg-base-100 rounded-box mb-4 overflow-hidden shadow-sm">
       <div class="overflow-x-auto">
         <%= if assigns.item_count > 0 do %>
@@ -17,7 +17,7 @@
       </div>
     </div>
   </div>
-  <div class="mt-4 flex flex-wrap items-center justify-between gap-y-4">
+  <div class="shrink-0 mt-4 flex flex-wrap items-center justify-between gap-y-4" id="resource-pagination">
     <.pagination
       path={
         URI.decode(

@@ -73,7 +73,7 @@ defmodule Backpex.Fields.BelongsTo do
     display_field_form = display_field_form(field, display_field)
 
     socket
-    |> assign(assigns)
+    |> assign(assigns |> Map.delete(:streams))
     |> assign(queryable: queryable)
     |> assign(owner_key: owner_key)
     |> assign(display_field: display_field)

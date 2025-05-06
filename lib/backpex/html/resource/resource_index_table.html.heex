@@ -1,7 +1,8 @@
+<% selectable? =  @live_resource.selectable?(assigns) %>
 <table class="table">
-  <thead class="bg-base-100 text-base-content uppercase">
+  <thead class="bg-base-100 text-base-content uppercase hidden md:table-header-group">
     <tr id="row-headers" phx-hook="BackpexStickyActions" class="border-b-2">
-      <th :if={Enum.any?(index_item_actions(@item_actions))}>
+      <th :if={selectable? and Enum.any?(index_item_actions(@item_actions))}>
         <input
           phx-click="toggle-item-selection"
           type="checkbox"
@@ -36,7 +37,7 @@
       class={index_row_class(assigns, item, selected?(@selected_items, item), index)}
       phx-hook="BackpexStickyActions"
     >
-      <td :if={Enum.any?(index_item_actions(@item_actions))} class="relative">
+      <td :if={selectable? and Enum.any?(index_item_actions(@item_actions))} class="relative">
         <div :if={selected?(@selected_items, item)} class="bg-base-content absolute inset-y-0 left-0 w-0.5" />
         <input
           id={"select-input-#{LiveResource.primary_value(item, @live_resource)}"}
@@ -63,22 +64,8 @@
         sticky_col_class(),
         "text-base-content/75 z-10 w-0 px-6"
       ]}>
-        <div class={["flex items-center justify-end space-x-2"]}>
-          <button
-            :for={{key, action} <- row_item_actions(@item_actions)}
-            :if={@live_resource.can?(assigns, key, item)}
-            id={"item-action-#{key}-#{LiveResource.primary_value(item, @live_resource)}"}
-            type="button"
-            phx-click="item-action"
-            phx-value-action-key={key}
-            phx-value-item-id={LiveResource.primary_value(item, @live_resource)}
-            aria-label={action.module.label(assigns, item)}
-            phx-hook="BackpexTooltip"
-            data-tooltip={action.module.label(assigns, item)}
-          >
-            {action.module.icon(assigns, item)}
-          </button>
-        </div>
+        <% item_assigns = Map.put(assigns, :item, item) |> Map.put(:actions, row_item_actions(@item_actions)) %>
+        {@live_resource.render_resource_slot(item_assigns, :row, :actions)}
       </td>
     </tr>
   </tbody>

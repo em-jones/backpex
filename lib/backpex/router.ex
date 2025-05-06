@@ -51,6 +51,8 @@ defmodule Backpex.Router do
       if Enum.member?(actions, :show),
         do: live("#{path}/:backpex_id/show", String.to_atom("#{live_resource}.Show"), :show)
 
+      if Enum.member?(actions, :show_summary), do: live("#{path}/:backpex_id/show_summary", live_resource, :show_summary)
+
       resource_module = Phoenix.Router.scoped_alias(__MODULE__, live_resource)
 
       if Router.has_resource_actions?(__MODULE__, live_resource) do
@@ -60,6 +62,12 @@ defmodule Backpex.Router do
           :resource_action
         )
       end
+    end
+  end
+
+  defmacro live_dashboard(path, live_dashboard, _options \\ []) do
+    quote do
+      live("#{unquote(path)}", unquote(live_dashboard))
     end
   end
 

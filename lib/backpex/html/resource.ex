@@ -203,6 +203,53 @@ defmodule Backpex.HTML.Resource do
   @doc type: :component
 
   attr :live_resource, :any, required: true, doc: "module of the live resource"
+  attr :label, :string, required: true
+  attr :order_options, :map, required: true, doc: "order options"
+
+  def index_sortable(assigns) do
+    assigns = assign_sortable(assigns)
+
+    ~H"""
+     <.form :let={f} for={@form} phx-change="change-sort" phx-submit="change-sort">
+        <label class="floating-label " tabindex="0">
+          <span class="!text-2xl">{@label}
+            <Backpex.HTML.CoreComponents.icon name="hero-chevron-up-down-solid" class={["mr-2 h-5 w-5"]} />
+         </span>
+
+        </label>
+       <Backpex.HTML.Form.input type="select" field={f[:order_by_value]} options={@field_options} />
+     </.form>
+    """
+  end
+
+  defp order_opts_as_select_value(%{order_by: field, order_direction: dir}) when is_atom(field) and is_atom(dir),
+    do: %{"order_by_value" => "#{field}_#{dir}"}
+
+  defp order_opts_as_select_value(_), do: %{"order_by_value" =>"default_asc"}
+
+  defp assign_sortable(%{live_resource: lr, order_options: opts} = assigns) do
+    opts = order_opts_as_select_value(opts)
+    lr.validated_fields()
+    |> LiveResource.filtered_fields_by_action(assigns, :index)
+    |> then(&{&1, LiveResource.orderable_fields(&1)})
+    |> then(&orderable_fields_as_select_options/1)
+    |> then(&assign(assigns, :field_options, &1))
+    |> assign(:form, to_form(opts, as: :index_sort))
+  end
+
+  defp orderable_fields_as_select_options({fields, orderable}),
+    do: Enum.flat_map(orderable, &as_asc_and_desc(&1, fields[&1].label))
+
+
+  defp as_asc_and_desc(field, label),
+    do: [{"#{label} (asc)", "#{field}_asc"}, {"#{label} (desc)", "#{field}_desc"}]
+
+  @doc """
+  Renders the index filters if the `filter/0` callback is defined in the resource.
+  """
+  @doc type: :component
+
+  attr :live_resource, :any, required: true, doc: "module of the live resource"
   attr :filter_options, :map, required: true, doc: "filter options"
   attr :filters, :list, required: true, doc: "list of active filters"
   attr :label, :string, required: true
@@ -655,6 +702,33 @@ defmodule Backpex.HTML.Resource do
     """
   end
 
+  def action_trigger_attrs(%{item: item, live_resource: live_resource} = assigns, action, key) do
+    id = LiveResource.primary_value(item, live_resource)
+    label = action.module.label(Map.put(assigns, :key, key), item)
+    %{
+      "phx-click" => "item-action",
+      "phx-value-action-key" => key,
+      "phx-value-item-id" => id,
+      "id" => "item-action-#{key}-#{id}",
+      "aria-label" => label,
+      "data-tooltip" => label
+    }
+  end
+
+  def row_actions(assigns) do
+    ~H"""
+     <div class={["flex items-center justify-end space-x-2"]}>
+       <button
+         :for={{key, action} <- row_item_actions(@item_actions)}
+         :if={@live_resource.can?(assigns, key, @item)}
+         {action_trigger_attrs(assigns, action, key)}
+         type="button">
+         {action.module.icon(assigns, @item)}
+       </button>
+     </div>
+    """
+  end
+
   @doc """
   Renders the input fields for filters and search.
   """
@@ -673,6 +747,13 @@ defmodule Backpex.HTML.Resource do
     ~H"""
     <div class="mb-4 flex flex-wrap gap-4">
       <.metric_toggle {assigns} />
+        <div class="w-[50%] lg:w-[20rem]">
+          <.index_sortable
+            live_resource={@live_resource}
+            order_options={LiveResource.get_order_options(@query_options)}
+            label={Backpex.__("Sort By", @live_resource)}
+          />
+        </div>
       <.index_search_form
         searchable_fields={@searchable_fields}
         full_text_search={@live_resource.config(:full_text_search)}
@@ -903,7 +984,7 @@ defmodule Backpex.HTML.Resource do
 
   def edit_card(assigns) do
     ~H"""
-    <div class="card bg-base-100 shadow-sm">
+    <div id="edit_card" class="card bg-base-100 shadow-sm overflow-y-scroll">
       <div class="card-body p-0">
         <%!-- Card Body --%>
         <div class="first:pt-3 last:pb-3">
@@ -943,11 +1024,11 @@ defmodule Backpex.HTML.Resource do
       |> assign(visible: Backpex.Metric.metrics_visible?(metric_visibility, live_resource))
 
     ~H"""
-    <div :if={length(@metrics) > 0 and @visible} class="items-center gap-4 lg:flex">
+    <div :if={length(@metrics) > 0 and @visible} class="items-center gap-4 lg:flex" id="resource-metrics">
       <%= for {_key, metric} <- @metrics do %>
         {component(
           &metric.module.render/1,
-          [metric: metric],
+          [metric: metric, socket: @socket, live_resource: @live_resource],
           {__ENV__.module, __ENV__.function, __ENV__.file, __ENV__.line}
         )}
       <% end %>

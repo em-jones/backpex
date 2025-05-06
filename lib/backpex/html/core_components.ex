@@ -30,6 +30,7 @@ defmodule Backpex.HTML.CoreComponents do
   attr :filter_name, :string, required: true
   attr :label, :string, required: true
   attr :live_resource, :atom, default: nil
+  attr :count, :integer, default: 0
 
   slot :inner_block
 
@@ -37,11 +38,11 @@ defmodule Backpex.HTML.CoreComponents do
     ~H"""
     <div class="indicator">
       <div class="join">
-        <div class="btn btn-sm join-item bg-base-300 border-base-content/10 pointer-events-none font-semibold">
+        <div class="btn btn-sm join-item bg-base-300 border-base-content/10 pointer-events-none font-semibold ">
           {@label}
         </div>
         <div class="btn btn-sm btn-outline join-item border-base-content/10 pointer-events-none border-l-transparent">
-          {render_slot(@inner_block)}
+          <div class="max-w-[18rem] truncate">{render_slot(@inner_block)}</div>
         </div>
       </div>
       <button

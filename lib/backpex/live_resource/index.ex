@@ -76,6 +76,21 @@ defmodule Backpex.LiveResource.Index do
     noreply(socket)
   end
 
+  def handle_event("change-sort", params, socket) do
+    [by, dir] = String.reverse(params["index_sort"]["order_by_value"])
+      |> String.split("_", parts: 2)
+      |> then(fn [dir, by] -> [by, dir] end)
+      |> Enum.map(&String.reverse/1)
+    query = Map.merge(socket.assigns.query_options, %{order_by: by, order_direction: dir})
+    to = Router.get_path(socket, socket.assigns.live_resource, socket.assigns.params, :index, query)
+
+    socket
+    |> assign(filters_changed: true)
+    |> LiveView.push_patch(to: to)
+    |> noreply()
+  end
+  require Logger
+
   def handle_event("change-filter", params, socket) do
     query_options = socket.assigns.query_options
 
@@ -92,6 +107,7 @@ defmodule Backpex.LiveResource.Index do
         _filter_params -> true
       end)
 
+    Logger.info(inspect(filters))
     to =
       Router.get_path(
         socket,
@@ -261,7 +277,7 @@ defmodule Backpex.LiveResource.Index do
   end
 
   defp open_action_confirm_modal(socket, action, key) do
-    if Backpex.ItemAction.has_form?(action) do
+    if Backpex.ItemAction.has_form?(action, socket.assigns) do
       changeset_function = &action.module.changeset/3
       base_schema = action.module.base_schema(socket.assigns)
 
@@ -564,24 +580,12 @@ defmodule Backpex.LiveResource.Index do
   end
 
   defp maybe_assign_metrics(socket) do
-    %{
-      live_resource: live_resource,
-      fields: fields,
-      query_options: query_options,
-      metric_visibility: metric_visibility
-    } = socket.assigns
-
+    %{live_resource: live_resource, metric_visibility: metric_visibility} = socket.assigns
     adapter_config = live_resource.config(:adapter_config)
-    filters = LiveResource.active_filters(socket.assigns)
-
     metrics =
       socket.assigns.live_resource.metrics()
       |> Enum.map(fn {key, metric} ->
-        criteria = [
-          search: LiveResource.search_options(query_options, fields, adapter_config[:schema]),
-          filters: LiveResource.filter_options(query_options, filters)
-        ]
-
+        criteria = metric.module.criteria(Map.put(socket.assigns, :metric_filter, Map.get(metric, :filter, %{})))
         query = EctoAdapter.list_query(criteria, socket.assigns, live_resource)
 
         case Backpex.Metric.metrics_visible?(metric_visibility, live_resource) do

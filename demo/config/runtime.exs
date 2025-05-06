@@ -37,4 +37,4 @@ config :logger, level: get_env("LOGGER_LEVEL", "debug") |> to_atom()
 
 config :sentry,
   dsn: get_env("SENTRY_DSN"),
-  environment_name: get_env("SENTRY_ENV", "local")
+  environment_name: config_env()
